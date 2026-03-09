@@ -7,7 +7,7 @@ import thyroidTestRoutes from './routes/thyroidTest.route.js';
 import { errorHandler }  from './middleware/auth.middleware.js';
 import dashboardRoutes   from './routes/dashboard.route.js';
 import settingsRoutes from './routes/settings.route.js';
-
+import patientSummaryRoutes from './routes/patientSummary.route.js';
 
 const app = express();
 
@@ -18,11 +18,12 @@ app.use(cookieParser());
 
 
 app.use('/api/auth',                           authRoutes);
-app.use('/api/dashboard',                    dashboardRoutes);
+app.use('/api/dashboard',                      dashboardRoutes);
 app.use('/api/patients',                       patientRoutes);
 app.use('/api/patients/:patientId/symptoms',   symptomRoutes);
 app.use('/api/patients/:patientId/tests',      thyroidTestRoutes);
-app.use('/api/settings', settingsRoutes)
+app.use('/api/settings',                       settingsRoutes)
+app.use('/api/patients/:patientId/summary',    patientSummaryRoutes);
 
 
 app.use((req, res) => {
