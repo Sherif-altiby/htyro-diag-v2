@@ -5,13 +5,14 @@ export const createPatient = async (doctorId, body) => {
   const { fullName, age, gender, phone, email, clinicalHistory } = body;
 
   // Split fullName into First and Last
-  const nameParts = fullName.trim().split(' ');
+  const nameParts  = fullName.trim().split(' ');
   const First_Name = nameParts[0];
   const Last_Name  = nameParts.slice(1).join(' ') || nameParts[0];
 
-  // Auto generate file number
-  const count      = await Patient.count({ where: { Doc_id: doctorId } });
-  const fileNumber = `TX-${String(count + 1).padStart(5, '0')}`;
+  // Auto generate unique file number
+  const count      = await Patient.count();  // 👈 count ALL patients not just doctor's
+  const timestamp  = Date.now().toString().slice(-4); // add timestamp to avoid duplicates
+  const fileNumber = `TX-${String(count + 1).padStart(5, '0')}-${timestamp}`;
 
   const patient = await Patient.create({
     Doc_id:          doctorId,

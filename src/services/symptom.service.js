@@ -2,37 +2,81 @@ import Symptom from '../models/symptom.model.js';
 import Patient from '../models/patient.model.js';
 import Doctor  from '../models/doctor.model.js';
 
-// ── Diagnosis prediction engine ────────────────────────────────────────────
-const predictDiagnosis = (symptom) => {
-  let hypothyroidismScore  = 0;
-  let hyperthyroidismScore = 0;
+// ── Prediction engine ──────────────────────────────────────────────────────
+const predictDiagnosis = (s) => {
 
-  const severityScore = { none: 0, mild: 1, moderate: 2, severe: 3 };
+  // Hypothyroidism score
+  let hypoScore = 0;
+  if (s.feeling_cold)         hypoScore++;
+  if (s.weight_gain)          hypoScore++;
+  if (s.cold_sensitivity)     hypoScore++;
+  if (s.slow_metabolism)      hypoScore++;
+  if (s.chronic_constipation) hypoScore++;
+  if (s.muscle_pain)          hypoScore++;
+  if (s.muscle_cramps)        hypoScore++;
+  if (s.dry_skin)             hypoScore++;
+  if (s.hair_loss)            hypoScore++;
+  if (s.less_sweating)        hypoScore++;
+  if (s.depression)           hypoScore++;
+  if (s.mood_swings)          hypoScore++;
+  if (s.face_swelling)        hypoScore++;
+  if (s.neck_swelling)        hypoScore++;
+  if (s.slow_heart_rate)      hypoScore++;
 
-  hypothyroidismScore += severityScore[symptom.Fatigue]               || 0;
-  hypothyroidismScore += severityScore[symptom.Weight_Change]         || 0;
-  hypothyroidismScore += severityScore[symptom.Cold_Heat_Intolerance] || 0;
-  hypothyroidismScore += symptom.Hair_Loss     ? 2 : 0;
-  hypothyroidismScore += symptom.Dry_Skin      ? 2 : 0;
-  hypothyroidismScore += symptom.Neck_Swelling ? 1 : 0;
-  hypothyroidismScore += symptom.Concentration_Difficulty > 60 ? 2 : 0;
-  hypothyroidismScore += symptom.Mood_Swings              > 60 ? 1 : 0;
+  // Hyperthyroidism score
+  let hyperScore = 0;
+  if (s.sudden_weight_loss)   hyperScore++;
+  if (s.increased_appetite)   hyperScore++;
+  if (s.heat_sensitivity)     hyperScore++;
+  if (s.excessive_sweating)   hyperScore++;
+  if (s.anxiety)              hyperScore++;
+  if (s.tremors)              hyperScore++;
+  if (s.mood_changes)         hyperScore++;
+  if (s.insomnia)             hyperScore++;
+  if (s.fast_heart_rate)      hyperScore++;
+  if (s.heart_palpitations)   hyperScore++;
+  if (s.bowel_activity)       hyperScore++;
+  if (s.eye_bulging)          hyperScore++;
+  if (s.thin_skin)            hyperScore++;
+  if (s.thin_hair)            hyperScore++;
 
-  hyperthyroidismScore += severityScore[symptom.Weight_Change]         || 0;
-  hyperthyroidismScore += symptom.Anxiety       > 60 ? 3 : 0;
-  hyperthyroidismScore += symptom.Mood_Swings   > 70 ? 2 : 0;
-  hyperthyroidismScore += symptom.Neck_Swelling ? 2  : 0;
-  hyperthyroidismScore += severityScore[symptom.Cold_Heat_Intolerance] || 0;
-
-  if (hypothyroidismScore > hyperthyroidismScore) {
-    return { result: 'خمول في الغدة' };
-  } else {
-    return { result: 'نشاط في الغدة' };
+  // Determine result
+  if (hypoScore === 0 && hyperScore === 0) {
+    return {
+      result:     'طبيعي',
+      diagnosis:  'normal',
+      hypoScore,
+      hyperScore,
+    };
   }
+
+  if (hypoScore > hyperScore) {
+    return {
+      result:    'خمول في الغدة',
+      diagnosis: 'hypothyroidism',
+      hypoScore,
+      hyperScore,
+    };
+  }
+
+  if (hyperScore > hypoScore) {
+    return {
+      result:    'نشاط في الغدة',
+      diagnosis: 'hyperthyroidism',
+      hypoScore,
+      hyperScore,
+    };
+  }
+
+  return {
+    result:    'غير محدد — يحتاج تقييم إضافي',
+    diagnosis: 'unknown',
+    hypoScore,
+    hyperScore,
+  };
 };
 
-// ── 👇 These exports are required ─────────────────────────────────────────
-
+// ── Create symptom ─────────────────────────────────────────────────────────
 export const createSymptom = async (doctorId, patientId, body) => {
   const patient = await Patient.findOne({
     where: { Patient_id: patientId, Doc_id: doctorId },
@@ -44,23 +88,49 @@ export const createSymptom = async (doctorId, patientId, body) => {
   }
 
   const symptom = await Symptom.create({
-    Patient_id:               patientId,
-    Fatigue:                  body.Fatigue                  || 'none',
-    Weight_Change:            body.Weight_Change            || 'none',
-    Cold_Heat_Intolerance:    body.Cold_Heat_Intolerance    || 'none',
-    Hair_Loss:                body.Hair_Loss                || false,
-    Dry_Skin:                 body.Dry_Skin                 || false,
-    Neck_Swelling:            body.Neck_Swelling            || false,
-    Anxiety:                  body.Anxiety                  || 0,
-    Mood_Swings:              body.Mood_Swings              || 0,
-    Concentration_Difficulty: body.Concentration_Difficulty || 0,
-    Additional_Notes:         body.Additional_Notes         || null,
+    Patient_id: patientId,
+
+    // Hypo symptoms
+    feeling_cold:         body.feeling_cold         || false,
+    weight_gain:          body.weight_gain           || false,
+    cold_sensitivity:     body.cold_sensitivity      || false,
+    slow_metabolism:      body.slow_metabolism       || false,
+    chronic_constipation: body.chronic_constipation  || false,
+    muscle_pain:          body.muscle_pain           || false,
+    muscle_cramps:        body.muscle_cramps         || false,
+    dry_skin:             body.dry_skin              || false,
+    hair_loss:            body.hair_loss             || false,
+    less_sweating:        body.less_sweating         || false,
+    depression:           body.depression            || false,
+    mood_swings:          body.mood_swings           || false,
+    face_swelling:        body.face_swelling         || false,
+    neck_swelling:        body.neck_swelling         || false,
+    slow_heart_rate:      body.slow_heart_rate       || false,
+
+    // Hyper symptoms
+    sudden_weight_loss:   body.sudden_weight_loss    || false,
+    increased_appetite:   body.increased_appetite    || false,
+    heat_sensitivity:     body.heat_sensitivity      || false,
+    excessive_sweating:   body.excessive_sweating    || false,
+    anxiety:              body.anxiety               || false,
+    tremors:              body.tremors               || false,
+    mood_changes:         body.mood_changes          || false,
+    insomnia:             body.insomnia              || false,
+    fast_heart_rate:      body.fast_heart_rate       || false,
+    heart_palpitations:   body.heart_palpitations    || false,
+    bowel_activity:       body.bowel_activity        || false,
+    eye_bulging:          body.eye_bulging           || false,
+    thin_skin:            body.thin_skin             || false,
+    thin_hair:            body.thin_hair             || false,
+
+    additional_notes:     body.additional_notes      || null,
   });
 
   const prediction = predictDiagnosis(symptom);
   return { symptom, prediction };
 };
 
+// ── Get symptoms ───────────────────────────────────────────────────────────
 export const getPatientSymptoms = async (doctorId, patientId) => {
   const patient = await Patient.findOne({
     where:   { Patient_id: patientId, Doc_id: doctorId },
